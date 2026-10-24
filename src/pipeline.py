@@ -1,15 +1,16 @@
 
 
+
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, trim, when, row_number
+from pyspark.sql.functions import col, trim, when, row_number, to_date
 from pyspark.sql.window import Window
 
 
 def create_spark_session():
+    """Create or reuse the Spark session provided by the environment."""
     return (
         SparkSession.builder
         .appName("DataQualityGovernancePipeline")
-        .master("local[*]")
         .getOrCreate()
     )
 
@@ -33,6 +34,7 @@ def validate_customer_data(df):
     )
 
     valid_df = checked_df.filter(col("rejection_reason").isNull())
+
     quarantine_df = checked_df.filter(
         col("rejection_reason").isNotNull()
     )
@@ -49,13 +51,7 @@ def clean_customer_data(df):
         valid_df
         .drop("name", "rejection_reason")
         .withColumnRenamed("customer_name", "name")
-    )
-
-    # Convert the date string to a date for correct chronological ordering.
-    from pyspark.sql.functions import to_date
-
-    cleaned_df = cleaned_df.withColumn(
-        "updated_at", to_date(col("updated_at"))
+        .withColumn("updated_at", to_date(col("updated_at")))
     )
 
     window_spec = (
@@ -90,7 +86,7 @@ def run_pipeline():
         print("\n=== BRONZE: Raw Customer Data ===")
         bronze_df.show(truncate=False)
 
-        valid_df, quarantine_df = validate_customer_data(bronze_df)
+        _, quarantine_df = validate_customer_data(bronze_df)
 
         print("\n=== QUARANTINE: Invalid Records ===")
         quarantine_df.show(truncate=False)
