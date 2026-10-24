@@ -1,1 +1,9 @@
-{\rtf1}
+bundle:
+  name: databricks-data-quality-governance
+
+workspace:
+  host: https://dbc-ec221609-e725.cloud.databricks.com
+
+targets:
+  dev:
+    default: true
